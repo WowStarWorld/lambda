@@ -1,5 +1,5 @@
 use crate::node::expression::{BlockExpression, Expression, Identifier, IfExpression, Literal};
-use crate::node::statement::{Statement};
+use crate::node::statement::Statement;
 use crate::parser::api::{BoxParseResult, Parser};
 use crate::tokenizer::token::TokenKind;
 
@@ -47,7 +47,9 @@ impl Parser {
         }
     }
 
-    pub fn is_block_expression(&self) -> bool { self.is_block_statement() }
+    pub fn is_block_expression(&self) -> bool {
+        self.is_block_statement()
+    }
     pub fn parse_block_expression(&mut self) -> BoxParseResult<dyn Expression> {
         self.token_buffer.next(); // 跳过 '{'
         self.token_buffer.skip_whitespaces();
@@ -75,7 +77,10 @@ impl Parser {
             self.token_buffer.skip_whitespaces();
         }
         self.token_buffer.next(); // 跳过 '}'
-        Ok(Box::new(BlockExpression { statements: body, return_expression }))
+        Ok(Box::new(BlockExpression {
+            statements: body,
+            return_expression,
+        }))
     }
 
     pub fn is_identifier(&self) -> bool {
@@ -124,7 +129,9 @@ impl Parser {
         })
     }
 
-    pub fn is_if_expression(&self) -> bool { self.token_buffer.is_identifier_of("if") }
+    pub fn is_if_expression(&self) -> bool {
+        self.token_buffer.is_identifier_of("if")
+    }
     pub fn parse_if_expression(&mut self) -> BoxParseResult<dyn Expression> {
         self.token_buffer.next();
         self.token_buffer.skip_whitespaces();
@@ -141,7 +148,9 @@ impl Parser {
         self.token_buffer.next(); // 跳过 ')'
         self.token_buffer.skip_whitespaces();
         if !self.is_expression() {
-            return Err(self.err("Expected expression after 'if' condition", None).into());
+            return Err(self
+                .err("Expected expression after 'if' condition", None)
+                .into());
         }
         let consequent = self.parse_expression()?;
         self.token_buffer.skip_whitespaces();

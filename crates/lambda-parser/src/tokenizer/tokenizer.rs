@@ -158,9 +158,7 @@ impl Tokenizer {
             let result = self.get_string()?;
             if let TokenKind::StringLiteral { value, raw, .. } = result.kind {
                 Ok(Token {
-                    kind: TokenKind::Identifier {
-                        raw, value,
-                    },
+                    kind: TokenKind::Identifier { raw, value },
                     start: result.start,
                     end: result.end,
                 })
@@ -461,7 +459,8 @@ impl Tokenizer {
     }
 
     fn is_identifier_start(&self) -> bool {
-        self.peek().map_or(false, |c| c.is_alphabetic() || c == '_' || c == '`')
+        self.peek()
+            .map_or(false, |c| c.is_alphabetic() || c == '_' || c == '`')
     }
 
     fn is_identifier_part(&self) -> bool {

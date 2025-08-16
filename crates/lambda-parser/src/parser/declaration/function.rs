@@ -76,7 +76,10 @@ impl Parser {
         Ok(parameters)
     }
 
-    pub fn parse_function_declaration(&mut self, access_modifier: Option<AccessModifier>) -> BoxParseResult<dyn Declaration> {
+    pub fn parse_function_declaration(
+        &mut self,
+        access_modifier: Option<AccessModifier>,
+    ) -> BoxParseResult<dyn Declaration> {
         self.token_buffer.next(); // 跳过 'fun'
         self.token_buffer.skip_whitespaces();
         let type_parameters = self.parse_type_parameters()?;
@@ -111,7 +114,9 @@ impl Parser {
         };
         self.token_buffer.skip_whitespaces();
         if !self.is_function_body() {
-            return Err(self.err("Expected '{' or '=' to start function body", None).into());
+            return Err(self
+                .err("Expected '{' or '=' to start function body", None)
+                .into());
         }
         let body = self.parse_function_body()?;
         Ok(Box::new(crate::node::declaration::FunctionDeclaration {
@@ -137,13 +142,17 @@ impl Parser {
             let expression = self.parse_expression()?;
             self.token_buffer.skip_whitespaces();
             if !self.token_buffer.is_punctuation_of(';') {
-                Err(self.err("Expected ';' at the end of expression body", None).into())
+                Err(self
+                    .err("Expected ';' at the end of expression body", None)
+                    .into())
             } else {
                 self.token_buffer.next(); // 跳过 ';'
                 Ok(Box::new(ReturnStatement::new(Some(expression))))
             }
         } else {
-            Err(self.err("Expected '{' or '=' to start function body", None).into())
+            Err(self
+                .err("Expected '{' or '=' to start function body", None)
+                .into())
         }
     }
 }

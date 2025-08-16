@@ -23,7 +23,9 @@ mod test {
             return !(a > b || a < b);
         }
         "#;
-        let src_info = SrcInfo { filename: "test.ld".to_string() };
+        let src_info = SrcInfo {
+            filename: "test.ld".to_string(),
+        };
         let program = Parser::new(Tokenizer::new(src, src_info)).parse_program();
         match program {
             Ok(program) => {

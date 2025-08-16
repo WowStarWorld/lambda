@@ -3,7 +3,6 @@ use crate::node::expression::Identifier;
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
 impl Parser {
-
     pub fn is_access_modifier(&self) -> bool {
         self.token_buffer.is_identifier_of("public")
             || self.token_buffer.is_identifier_of("private")
@@ -12,7 +11,13 @@ impl Parser {
     }
 
     pub fn parse_access_modifier(&mut self) -> ParseResult<AccessModifier> {
-        match self.parse_identifier()?.downcast::<Identifier>().unwrap().get_name().as_str() {
+        match self
+            .parse_identifier()?
+            .downcast::<Identifier>()
+            .unwrap()
+            .get_name()
+            .as_str()
+        {
             "public" => Ok(AccessModifier::Public),
             "private" => Ok(AccessModifier::Private),
             "protected" => Ok(AccessModifier::Protected),
@@ -38,5 +43,4 @@ impl Parser {
             Err(self.err("Expected an annotated declaration", None).into())
         }
     }
-
 }

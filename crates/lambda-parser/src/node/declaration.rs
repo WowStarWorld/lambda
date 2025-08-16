@@ -1,9 +1,9 @@
-use std::any::Any;
 use crate::node::expression::Identifier;
 use crate::node::statement::Statement;
 use crate::node::typing::{Type, TypeParameter};
-use std::fmt::Debug;
 use lambda_core::impl_downcast;
+use std::any::Any;
+use std::fmt::Debug;
 
 pub trait Declaration: Debug + Any {}
 impl_downcast!(Declaration);
@@ -13,10 +13,10 @@ pub enum AccessModifier {
     Public,
     Private,
     Protected,
-    Internal
+    Internal,
 }
 
-// MainDeclaration
+// FunctionDeclaration
 #[derive(Debug)]
 pub struct FunctionParameter {
     pub name: Identifier,

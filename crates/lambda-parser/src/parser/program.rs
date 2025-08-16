@@ -20,7 +20,7 @@ impl Parser {
                 } else {
                     Err(self.err("Invalid top-level declaration", None).into())
                 }
-            },
+            }
             Err(e) => Err(e),
         }
     }
@@ -38,7 +38,9 @@ impl Parser {
         let name = self.parse_identifier_list()?;
         self.token_buffer.skip_whitespaces();
         if !self.token_buffer.is_punctuation_of(';') {
-            return Err(self.err("Expected ';' after package definition", None).into());
+            return Err(self
+                .err("Expected ';' after package definition", None)
+                .into());
         }
         self.token_buffer.next(); // 跳过 ';'
         Ok(PackageDefinition { name })
@@ -56,8 +58,9 @@ impl Parser {
             }
             self.token_buffer.skip_whitespaces();
         }
-        Ok(
-            Program { package_definition, declarations }
-        )
+        Ok(Program {
+            package_definition,
+            declarations,
+        })
     }
 }

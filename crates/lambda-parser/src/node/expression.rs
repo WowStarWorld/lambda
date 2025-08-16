@@ -1,10 +1,10 @@
 use crate::node::node::HasToken;
+use crate::node::statement::Statement;
 use crate::node::typing::Type;
 use crate::tokenizer::token::{Token, TokenKind};
 use lambda_core::impl_downcast;
 use std::any::Any;
 use std::fmt::Debug;
-use crate::node::statement::Statement;
 
 pub trait Expression: Debug + Any {}
 impl_downcast!(Expression);
@@ -59,6 +59,7 @@ impl BinaryExpression {
     }
 }
 
+// CallExpression
 #[derive(Debug)]
 pub struct FunctionArgument {
     pub base: Box<dyn Expression>,
@@ -73,6 +74,7 @@ pub struct CallExpression {
 }
 impl Expression for CallExpression {}
 
+// UnaryExpression
 #[derive(Debug)]
 pub struct UnaryExpression {
     pub expression: Box<dyn Expression>,
@@ -80,6 +82,7 @@ pub struct UnaryExpression {
 }
 impl Expression for UnaryExpression {}
 
+// IfExpression
 #[derive(Debug)]
 pub struct IfExpression {
     pub test: Box<dyn Expression>,
@@ -88,6 +91,7 @@ pub struct IfExpression {
 }
 impl Expression for IfExpression {}
 
+// BlockExpression
 #[derive(Debug)]
 pub struct BlockExpression {
     pub statements: Vec<Box<dyn Statement>>,
