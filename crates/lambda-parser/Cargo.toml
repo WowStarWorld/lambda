@@ -1,0 +1,8 @@
+[package]
+name = "lambda-parser"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+lambda-core = { path = "../lambda-core" }
+once_cell = "1.21.3"
