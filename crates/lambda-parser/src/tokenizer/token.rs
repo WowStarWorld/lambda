@@ -1,10 +1,15 @@
 pub const PUNCTUATIONS: &[char] = &[
-    '(', ')', '{', '}', '[', ']', ';', ':', ',', '.', '+', '-', '*', '/', '%', '=', '&', '|', '!', '<', '>', '?', '^', '~'
+    '(', ')', '{', '}', '[', ']', ';', ':', ',', '.', '+', '-', '*', '/', '%', '=', '&', '|', '!',
+    '<', '>', '?', '^', '~',
 ];
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NumberRadix {
-    Decimal { integer: Option<String>, fraction: Option<String>, exponent: Option<String> },
+    Decimal {
+        integer: Option<String>,
+        fraction: Option<String>,
+        exponent: Option<String>,
+    },
     Octal,
     Binary,
     Hexadecimal,
@@ -19,7 +24,7 @@ pub enum TokenKind {
     Punctuation(char),
     Whitespace(String),
     Unknown(char),
-    End
+    End,
 }
 
 #[derive(Debug, Clone)]

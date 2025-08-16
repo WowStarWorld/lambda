@@ -1,6 +1,6 @@
-pub mod node;
-pub mod expression;
-pub mod statement;
 pub mod declaration;
-pub mod typing;
+pub mod expression;
+pub mod node;
 pub mod program;
+pub mod statement;
+pub mod typing;

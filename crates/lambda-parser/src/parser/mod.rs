@@ -1,6 +1,6 @@
 pub mod api;
-pub mod expression;
 pub mod declaration;
+pub mod expression;
+pub mod program;
 pub mod statement;
 pub mod typing;
-pub mod program;

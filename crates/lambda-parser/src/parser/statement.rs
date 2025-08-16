@@ -1,28 +1,36 @@
-use crate::parser::api::{Throwable, TokenBuffer};
-use crate::parser::expression::base::{is_expression, parse_expression};
 use crate::node::statement::{ExpressionStatement, Statement};
+use crate::parser::api::{BoxParseResult, Parser};
 
-pub fn is_statement(token_buffer: TokenBuffer) -> bool { is_expression_statement(token_buffer) }
-pub fn parse_statement(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Statement>, Throwable> {
-    let clone_token_buffer = token_buffer.clone();
-    if is_expression_statement(clone_token_buffer) {
-        parse_expression_statement(token_buffer)
-    } else {
-        Err(token_buffer.err("Expected a valid statement", None).into())
+impl Parser {
+    pub fn is_statement(&self) -> bool {
+        self.is_expression_statement()
     }
-}
+    pub fn parse_statement(&mut self) -> BoxParseResult<dyn Statement> {
+        if self.is_expression_statement() {
+            self.parse_expression_statement()
+        } else {
+            Err(self.err("Expected a valid statement", None).into())
+        }
+    }
 
-pub fn is_expression_statement(token_buffer: TokenBuffer) -> bool { is_expression(token_buffer) }
-pub fn parse_expression_statement(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Statement>, Throwable> {
-    let expression = parse_expression(token_buffer);
-    if expression.is_err() {
-        return Err(token_buffer.err("Failed to parse expression in statement", None).into());
+    pub fn is_expression_statement(&self) -> bool {
+        self.is_expression()
     }
-    token_buffer.skip_whitespaces();
-    if !token_buffer.is_punctuation_of(';') {
-        Err(token_buffer.err("Expected ';' at the end of expression statement", None).into())
-    } else {
-        token_buffer.next(); // 跳过 ';'
-        Ok(Box::new(ExpressionStatement::new(expression?)))
+    pub fn parse_expression_statement(&mut self) -> BoxParseResult<dyn Statement> {
+        let expression = self.parse_expression();
+        if expression.is_err() {
+            return Err(self
+                .err("Failed to parse expression in statement", expression.err())
+                .into());
+        }
+        self.token_buffer.skip_whitespaces();
+        if !self.token_buffer.is_punctuation_of(';') {
+            Err(self
+                .err("Expected ';' at the end of expression statement", None)
+                .into())
+        } else {
+            self.token_buffer.next(); // 跳过 ';'
+            Ok(Box::new(ExpressionStatement::new(expression?)))
+        }
     }
 }

@@ -1,15 +1,15 @@
-use crate::tokenizer::token::{NumberRadix, Token, TokenKind, PUNCTUATIONS};
+use crate::tokenizer::token::{NumberRadix, PUNCTUATIONS, Token, TokenKind};
 
 #[derive(Debug, Clone)]
 pub struct SrcInfo {
-    pub filename: String
+    pub filename: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct Tokenizer {
     pub src: Vec<char>,
     pub current_index: usize,
-    pub src_info: SrcInfo
+    pub src_info: SrcInfo,
 }
 
 // 基础部分
@@ -56,7 +56,6 @@ impl Tokenizer {
         }
     }
 }
-
 
 // 分析部分
 impl Tokenizer {
@@ -228,7 +227,7 @@ impl Tokenizer {
         Ok(Token {
             kind: TokenKind::NumberLiteral {
                 raw: raw.clone(),
-                radix: NumberRadix::Hexadecimal
+                radix: NumberRadix::Hexadecimal,
             },
             start,
             end: self.current_index,
@@ -336,9 +335,21 @@ impl Tokenizer {
             kind: TokenKind::NumberLiteral {
                 raw: raw.clone(),
                 radix: NumberRadix::Decimal {
-                    integer: if integer.is_empty() { None } else { Some(integer) },
-                    fraction: if fraction.is_empty() { None } else { Some(fraction) },
-                    exponent: if exponent.is_empty() { None } else { Some(exponent) },
+                    integer: if integer.is_empty() {
+                        None
+                    } else {
+                        Some(integer)
+                    },
+                    fraction: if fraction.is_empty() {
+                        None
+                    } else {
+                        Some(fraction)
+                    },
+                    exponent: if exponent.is_empty() {
+                        None
+                    } else {
+                        Some(exponent)
+                    },
                 },
             },
             start,
@@ -358,7 +369,7 @@ impl Tokenizer {
                 return Ok(Token {
                     kind: TokenKind::StringLiteral {
                         value: content.clone(),
-                        raw: raw.clone()
+                        raw: raw.clone(),
                     },
                     start,
                     end: self.current_index,
@@ -366,7 +377,10 @@ impl Tokenizer {
             } else if c == '\\' {
                 raw.push(self.get().unwrap()); // 跳过 '\\'
                 let esc = match self.get() {
-                    Some(e) => { raw.push(e); e },
+                    Some(e) => {
+                        raw.push(e);
+                        e
+                    }
                     None => return Err("Unterminated escape".to_string()),
                 };
                 match esc {
@@ -383,7 +397,10 @@ impl Tokenizer {
                         let mut hex = String::new();
                         for _ in 0..2 {
                             match self.get() {
-                                Some(h) => { raw.push(h); hex.push(h); },
+                                Some(h) => {
+                                    raw.push(h);
+                                    hex.push(h);
+                                }
                                 None => return Err("Invalid \\x escape".to_string()),
                             }
                         }
@@ -396,7 +413,10 @@ impl Tokenizer {
                         let mut hex = String::new();
                         for _ in 0..4 {
                             match self.get() {
-                                Some(h) => { raw.push(h); hex.push(h); },
+                                Some(h) => {
+                                    raw.push(h);
+                                    hex.push(h);
+                                }
                                 None => return Err("Invalid \\u escape".to_string()),
                             }
                         }
@@ -429,7 +449,8 @@ impl Tokenizer {
     }
 
     fn is_identifier_part(&self) -> bool {
-        self.peek().map_or(false, |c| c.is_alphanumeric() || c == '_')
+        self.peek()
+            .map_or(false, |c| c.is_alphanumeric() || c == '_')
     }
 
     fn is_punctuation(&self) -> bool {
@@ -455,4 +476,3 @@ impl Tokenizer {
         Ok(tokens)
     }
 }
-

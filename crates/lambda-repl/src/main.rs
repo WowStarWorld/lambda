@@ -1,6 +1,5 @@
 use std::io::Write;
-use lambda_parser::parser::api::TokenBuffer;
-use lambda_parser::parser::statement::parse_statement;
+use lambda_parser::parser::api::{Parser};
 use lambda_parser::tokenizer::tokenizer::{SrcInfo, Tokenizer};
 
 fn main() {
@@ -20,8 +19,8 @@ fn main() {
             filename: "<stdin>".to_string()
         };
         let tokenizer = Tokenizer::new(&*input, src_info);
-        let mut token_buffer = TokenBuffer::new(tokenizer);
-        match parse_statement(&mut token_buffer) {
+        let mut parser = Parser::new(tokenizer);
+        match parser.parse_statement() {
             Ok(statement) => println!("{:#?}", statement),
             Err(e) => eprintln!("{e}")
         }

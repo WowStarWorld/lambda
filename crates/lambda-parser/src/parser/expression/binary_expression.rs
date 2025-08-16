@@ -1,8 +1,7 @@
-use once_cell::sync::Lazy;
-use crate::parser::api::{Throwable, TokenBuffer};
-use crate::parser::expression::base::{is_expression, parse_base_expression, parse_expression};
 use crate::node::expression::Expression;
+use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 use crate::tokenizer::token::{Token, TokenKind};
+use once_cell::sync::Lazy;
 
 pub const BINARY_OPERATORS: &[&[&str]] = &[
     &["**"],
@@ -11,7 +10,7 @@ pub const BINARY_OPERATORS: &[&[&str]] = &[
     &["==", "!=", ">=", "<=", ">", "<"],
     &["&&", "&"],
     &["||", "|"],
-    &["="]
+    &["="],
 ];
 
 pub static BINARY_OPERATORS_FLATTEN: Lazy<Vec<&str>> = Lazy::new(|| {
@@ -22,56 +21,6 @@ pub static BINARY_OPERATORS_FLATTEN: Lazy<Vec<&str>> = Lazy::new(|| {
     flatten
 });
 
-pub fn parse_binary_expression(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Expression>, Throwable> {
-    let left = parse_base_expression(token_buffer)?;
-    let mut binary_expression_parts: Vec<(String, Box<dyn Expression>)> = Vec::new();
-    while token_buffer.has_next() {
-        let position = token_buffer.position;
-        let binary_operator_part = parse_binary_operator_part(token_buffer);
-        match binary_operator_part {
-            Ok((operator, right)) => {
-                binary_expression_parts.push((operator, right));
-            }
-            Err(_) => {
-                token_buffer.position = position;
-                break;
-            }
-        }
-    }
-    build_binary_operator(left, binary_expression_parts)
-}
-
-fn parse_binary_operator_part(token_buffer: &mut TokenBuffer) -> Result<(String, Box<dyn Expression>), Throwable> {
-    let mut operator = String::new();
-    token_buffer.skip_whitespaces();
-    while token_buffer.has_next() {
-        if let Some(Token { kind: TokenKind::Punctuation(char), .. }) = token_buffer.peek() {
-            operator.push(*char);
-            let count = BINARY_OPERATORS_FLATTEN.iter()
-                .filter(|&&op| op.starts_with(operator.as_str()))
-                .count();
-            let has_next_punctuation = token_buffer.peek_n(1)
-                .map_or(false, |next_token| matches!(next_token.kind, TokenKind::Punctuation(_)));
-            if count == 0 {
-                return Err(token_buffer.err(format!("Invalid operator: {}", operator).as_str(), None).into());
-            } else if count == 1 || !has_next_punctuation {
-                token_buffer.position += 1;
-                token_buffer.skip_whitespaces();
-                if !is_expression(token_buffer.clone()) {
-                    return Err(token_buffer.err("Expected an expression after operator", None).into());
-                }
-                let right = parse_expression(token_buffer)?;
-                return Ok((operator, right));
-            }
-            token_buffer.position += 1
-        } else {
-            break
-        }
-    }
-    Err(token_buffer.err("Expected a binary operator", None).into())
-}
-
-
 fn get_operator_priority(op: &str) -> Option<usize> {
     for (priority, ops) in BINARY_OPERATORS.iter().enumerate() {
         if ops.contains(&op) {
@@ -81,10 +30,10 @@ fn get_operator_priority(op: &str) -> Option<usize> {
     None
 }
 
-pub fn build_binary_operator(
+fn build_binary_operator(
     mut left: Box<dyn Expression>,
-    parts: Vec<(String, Box<dyn Expression>)>
-) -> Result<Box<dyn Expression>, Throwable> {
+    parts: Vec<(String, Box<dyn Expression>)>,
+) -> BoxParseResult<dyn Expression> {
     if parts.is_empty() {
         return Ok(left);
     }
@@ -108,8 +57,72 @@ pub fn build_binary_operator(
         let mut iter = group.into_iter();
         while let Some((op, right)) = iter.next() {
             // 构造Token
-            left = Box::new(crate::node::expression::BinaryExpression::new(left, right, op));
+            left = Box::new(crate::node::expression::BinaryExpression::new(
+                left, right, op,
+            ));
         }
     }
     Ok(left)
+}
+
+impl Parser {
+    pub fn parse_binary_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        let left = self.parse_base_expression()?;
+        let mut binary_expression_parts: Vec<(String, Box<dyn Expression>)> = Vec::new();
+        while self.token_buffer.has_next() {
+            let position = self.token_buffer.position;
+            let binary_operator_part = self.parse_binary_operator_part();
+            match binary_operator_part {
+                Ok((operator, right)) => {
+                    binary_expression_parts.push((operator, right));
+                }
+                Err(_) => {
+                    self.token_buffer.position = position;
+                    break;
+                }
+            }
+        }
+        build_binary_operator(left, binary_expression_parts)
+    }
+
+    fn parse_binary_operator_part(&mut self) -> ParseResult<(String, Box<dyn Expression>)> {
+        let mut operator = String::new();
+        self.token_buffer.skip_whitespaces();
+        while self.token_buffer.has_next() {
+            if let Some(Token {
+                kind: TokenKind::Punctuation(char),
+                ..
+            }) = self.token_buffer.peek()
+            {
+                operator.push(*char);
+                let count = BINARY_OPERATORS_FLATTEN
+                    .iter()
+                    .filter(|&&op| op.starts_with(operator.as_str()))
+                    .count();
+                let has_next_punctuation =
+                    self.token_buffer.peek_n(1).map_or(false, |next_token| {
+                        matches!(next_token.kind, TokenKind::Punctuation(_))
+                    });
+                if count == 0 {
+                    return Err(self
+                        .err(format!("Invalid operator: {}", operator).as_str(), None)
+                        .into());
+                } else if count == 1 || !has_next_punctuation {
+                    self.token_buffer.position += 1;
+                    self.token_buffer.skip_whitespaces();
+                    if !self.is_expression() {
+                        return Err(self
+                            .err("Expected an expression after operator", None)
+                            .into());
+                    }
+                    let right = self.parse_expression()?;
+                    return Ok((operator, right));
+                }
+                self.token_buffer.position += 1
+            } else {
+                break;
+            }
+        }
+        Err(self.err("Expected a binary operator", None).into())
+    }
 }

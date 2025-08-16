@@ -1,12 +1,27 @@
-use std::fmt::{Debug, Display, Formatter};
 use crate::tokenizer::token::{Token, TokenKind};
 use crate::tokenizer::tokenizer::{SrcInfo, Tokenizer};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Clone)]
 pub struct TokenBuffer {
     pub tokens: Vec<Token>,
     pub position: usize,
-    pub src_info: SrcInfo
+    pub src_info: SrcInfo,
+}
+
+pub struct Parser {
+    pub token_buffer: TokenBuffer,
+}
+
+impl Parser {
+    pub fn new(tokenizer: Tokenizer) -> Self {
+        Self {
+            token_buffer: TokenBuffer::new(tokenizer),
+        }
+    }
+    pub fn err(&self, message: &str, cause: Option<Box<dyn std::error::Error>>) -> SyntaxError {
+        self.token_buffer.err(message, cause)
+    }
 }
 
 impl TokenBuffer {
@@ -14,7 +29,7 @@ impl TokenBuffer {
         Self {
             tokens: tokenizer.collect().unwrap(),
             src_info: tokenizer.src_info,
-            position: 0
+            position: 0,
         }
     }
 
@@ -64,7 +79,7 @@ impl TokenBuffer {
             message: message.to_string(),
             cause,
             position: self.position,
-            token_buffer: self.clone()
+            token_buffer: self.clone(),
         }
     }
 }
@@ -73,7 +88,7 @@ pub struct SyntaxError {
     pub message: String,
     pub cause: Option<Box<dyn std::error::Error>>,
     pub position: usize,
-    pub token_buffer: TokenBuffer
+    pub token_buffer: TokenBuffer,
 }
 
 impl SyntaxError {
@@ -95,14 +110,16 @@ impl SyntaxError {
                         }
                     }
                 }
-                _ => {
-                    col += token.get_raw().chars().count()
-                }
+                _ => col += token.get_raw().chars().count(),
             }
         }
         // 输出
         writeln!(f, "SyntaxError: {}", self.message)?;
-        writeln!(f, "    at line {}, column {} ({}:{})", line, col, self.token_buffer.src_info.filename, self.position)?;
+        writeln!(
+            f,
+            "    at line {}, column {} ({}:{})",
+            line, col, self.token_buffer.src_info.filename, self.position
+        )?;
         if self.cause.is_some() {
             writeln!(f, "Caused by {}", self.cause.as_ref().unwrap())
         } else {
@@ -111,15 +128,35 @@ impl SyntaxError {
     }
 }
 
-impl Debug for SyntaxError { fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { self.format(f) } }
-impl Display for SyntaxError { fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { self.format(f) } }
+impl Debug for SyntaxError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.format(f)
+    }
+}
+impl Display for SyntaxError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.format(f)
+    }
+}
 impl std::error::Error for SyntaxError {}
 
 pub type Throwable = Box<dyn std::error::Error>;
+pub type ParseResult<T> = Result<T, Throwable>;
+pub type BoxParseResult<T> = ParseResult<Box<T>>;
 
 impl TokenBuffer {
-    pub fn is_identifier(&self) -> bool { self.peek().map_or(false, | token | token.is_identifier()) }
-    pub fn is_identifier_of(&self, identifier: &str) -> bool { self.peek().map_or(false, | token | token.is_identifier_of(identifier)) }
-    pub fn is_punctuation(&self) -> bool { self.peek().map_or(false, | token | token.is_punctuation()) }
-    pub fn is_punctuation_of(&self, punctuation: char) -> bool { self.peek().map_or(false, | token | token.is_punctuation_of(punctuation)) }
+    pub fn is_identifier(&self) -> bool {
+        self.peek().map_or(false, |token| token.is_identifier())
+    }
+    pub fn is_identifier_of(&self, identifier: &str) -> bool {
+        self.peek()
+            .map_or(false, |token| token.is_identifier_of(identifier))
+    }
+    pub fn is_punctuation(&self) -> bool {
+        self.peek().map_or(false, |token| token.is_punctuation())
+    }
+    pub fn is_punctuation_of(&self, punctuation: char) -> bool {
+        self.peek()
+            .map_or(false, |token| token.is_punctuation_of(punctuation))
+    }
 }

@@ -1,80 +1,88 @@
-use crate::parser::api::{Throwable, TokenBuffer};
-use crate::parser::expression::binary_expression::parse_binary_expression;
 use crate::node::expression::{Expression, Identifier, Literal};
-use crate::parser::expression::post_expression::{is_post_expression, parse_post_expression};
-use crate::parser::expression::unary_expression::{is_unary_expression, parse_unary_expression};
+use crate::parser::api::{BoxParseResult, Parser};
 use crate::tokenizer::token::TokenKind;
 
-pub fn is_expression(token_buffer: TokenBuffer) -> bool {
-    is_literal(token_buffer.clone())
-        || is_bracket_expression(token_buffer.clone())
-        || is_identifier(token_buffer.clone())
-        || is_unary_expression(token_buffer.clone())
-}
+impl Parser {
+    pub fn is_expression(&self) -> bool {
+        self.is_literal()
+            || self.is_bracket_expression()
+            || self.is_identifier()
+            || self.is_unary_expression()
+    }
 
-pub fn parse_expression(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Expression>, Throwable> {
-    parse_binary_expression(token_buffer)
-}
+    pub fn parse_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        self.parse_binary_expression()
+    }
 
-pub fn parse_base_expression(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Expression>, Throwable> {
-    token_buffer.skip_whitespaces();
-    let result: Result<Box<dyn Expression>, Throwable> = if is_literal(token_buffer.clone()) {
-        Ok(parse_literal(token_buffer))
-    } else if is_bracket_expression(token_buffer.clone()) {
-        parse_bracket_expression(token_buffer)
-    } else if is_identifier(token_buffer.clone()) {
-        parse_identifier(token_buffer)
-    } else if is_unary_expression(token_buffer.clone()) {
-        parse_unary_expression(token_buffer)
-    } else {
-        Err(token_buffer.err("Expected a literal expression", None).into())
-    };
-    match result {
-        Ok(expression) => {
-            token_buffer.skip_whitespaces();
-            if is_post_expression(token_buffer.clone()) {
-                parse_post_expression(token_buffer, expression)
-            } else {
-                Ok(expression)
+    pub fn parse_base_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        self.token_buffer.skip_whitespaces();
+        let result: BoxParseResult<dyn Expression> = if self.is_literal() {
+            Ok(self.parse_literal())
+        } else if self.is_bracket_expression() {
+            self.parse_bracket_expression()
+        } else if self.is_identifier() {
+            self.parse_identifier()
+        } else if self.is_unary_expression() {
+            self.parse_unary_expression()
+        } else {
+            Err(self.err("Expected a literal expression", None).into())
+        };
+        match result {
+            Ok(expression) => {
+                self.token_buffer.skip_whitespaces();
+                if self.is_post_expression() {
+                    self.parse_post_expression(expression)
+                } else {
+                    Ok(expression)
+                }
             }
-        },
-        Err(err) => Err(err)
+            Err(err) => Err(err),
+        }
     }
-}
 
-pub fn is_identifier(token_buffer: TokenBuffer) -> bool { token_buffer.is_identifier() }
-pub fn parse_identifier(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Expression>, Throwable> {
-    if is_identifier(token_buffer.clone()) {
-        let token = token_buffer.next().unwrap();
-        Ok(Box::new(Identifier { token }))
-    } else {
-        Err(token_buffer.err("Expected an identifier", None).into())
+    pub fn is_identifier(&self) -> bool {
+        self.token_buffer.is_identifier()
     }
-}
-
-pub fn is_bracket_expression(token_buffer: TokenBuffer) -> bool { token_buffer.is_punctuation_of('(') }
-pub fn parse_bracket_expression(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Expression>, Throwable> {
-    token_buffer.next(); // 跳过 '('
-    token_buffer.skip_whitespaces();
-    let expression = parse_expression(token_buffer);
-    token_buffer.skip_whitespaces();
-    if token_buffer.is_punctuation_of(')') {
-        token_buffer.next();
-        expression
-    } else {
-        Err(token_buffer.err("Expected ')'", None).into())
+    pub fn parse_identifier(&mut self) -> BoxParseResult<dyn Expression> {
+        if self.is_identifier() {
+            let token = self.token_buffer.next().unwrap();
+            Ok(Box::new(Identifier { token }))
+        } else {
+            Err(self.err("Expected an identifier", None).into())
+        }
     }
-}
 
-pub fn is_literal(token_buffer: TokenBuffer) -> bool {
-    let next = token_buffer.peek();
-    if let Some(token) = next {
-        matches!(token.kind, TokenKind::NumberLiteral { .. } | TokenKind::StringLiteral { .. })
-    } else {
-        false
+    pub fn is_bracket_expression(&self) -> bool {
+        self.token_buffer.is_punctuation_of('(')
     }
-}
+    pub fn parse_bracket_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        self.token_buffer.next(); // 跳过 '('
+        self.token_buffer.skip_whitespaces();
+        let expression = self.parse_expression();
+        self.token_buffer.skip_whitespaces();
+        if self.token_buffer.is_punctuation_of(')') {
+            self.token_buffer.next();
+            expression
+        } else {
+            Err(self.err("Expected ')'", None).into())
+        }
+    }
 
-pub fn parse_literal(token_buffer: &mut TokenBuffer) -> Box<Literal> {
-    Box::new(Literal { token: token_buffer.next().unwrap() })
+    pub fn is_literal(&self) -> bool {
+        let next = self.token_buffer.peek();
+        if let Some(token) = next {
+            matches!(
+                token.kind,
+                TokenKind::NumberLiteral { .. } | TokenKind::StringLiteral { .. }
+            )
+        } else {
+            false
+        }
+    }
+
+    pub fn parse_literal(&mut self) -> Box<Literal> {
+        Box::new(Literal {
+            token: self.token_buffer.next().unwrap(),
+        })
+    }
 }

@@ -1,29 +1,30 @@
 use crate::node::declaration::Declaration;
-use crate::parser::api::{Throwable, TokenBuffer};
-use crate::parser::declaration::function::{is_function_declaration, parse_function_declaration};
+use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
-pub fn is_top_level_declaration(token_buffer: TokenBuffer) -> bool {
-    is_function_declaration(token_buffer.clone())
-}
-
-pub fn parse_top_level_declaration(token_buffer: &mut TokenBuffer) -> Result<Box<dyn Declaration>, Throwable> {
-    if is_function_declaration(token_buffer.clone()) {
-        parse_function_declaration(token_buffer)
-    } else {
-        Err(token_buffer.err("Expected a top-level declaration", None).into())
+impl Parser {
+    pub fn is_top_level_declaration(&self) -> bool {
+        self.is_function_declaration()
     }
-}
 
-pub fn parse_program(token_buffer: &mut TokenBuffer) -> Result<Vec<Box<dyn Declaration>>, Throwable> {
-    let mut declarations = Vec::new();
-    token_buffer.skip_whitespaces();
-    while token_buffer.has_next() {
-        if is_top_level_declaration(token_buffer.clone()) {
-            declarations.push(parse_top_level_declaration(token_buffer)?);
+    pub fn parse_top_level_declaration(&mut self) -> BoxParseResult<dyn Declaration> {
+        if self.is_function_declaration() {
+            self.parse_function_declaration()
         } else {
-            return Err(token_buffer.err("Unexpected token in program", None).into());
+            Err(self.err("Expected a top-level declaration", None).into())
         }
-        token_buffer.skip_whitespaces();
     }
-    Ok(declarations)
+
+    pub fn parse_program(&mut self) -> ParseResult<Vec<Box<dyn Declaration>>> {
+        let mut declarations = Vec::new();
+        self.token_buffer.skip_whitespaces();
+        while self.token_buffer.has_next() {
+            if self.is_top_level_declaration() {
+                declarations.push(self.parse_top_level_declaration()?);
+            } else {
+                return Err(self.err("Unexpected token in program", None).into());
+            }
+            self.token_buffer.skip_whitespaces();
+        }
+        Ok(declarations)
+    }
 }

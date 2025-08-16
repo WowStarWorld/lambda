@@ -1,17 +1,16 @@
-pub mod tokenizer;
-pub mod parser;
 pub mod node;
+pub mod parser;
+pub mod tokenizer;
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::api::TokenBuffer;
-    use crate::parser::program::parse_program;
     use super::tokenizer::tokenizer::{SrcInfo, Tokenizer};
+    use crate::parser::api::Parser;
 
     #[test]
     fn main_declaration() {
         let src_info = SrcInfo {
-            filename: "<test>".to_string()
+            filename: "<test>".to_string(),
         };
         let tokenizer = Tokenizer::new(
             r#"
@@ -20,16 +19,14 @@ mod tests {
                 test(...args);
             }
             "#,
-            src_info
+            src_info,
         );
-        let mut token_buffer = TokenBuffer::new(tokenizer);
-        match parse_program(&mut token_buffer) {
-            Ok(_) => {},
+        let mut parser = Parser::new(tokenizer);
+        match parser.parse_program() {
+            Ok(_) => {}
             Err(err) => {
                 panic!("{}", err);
             }
         }
     }
-
-
 }
