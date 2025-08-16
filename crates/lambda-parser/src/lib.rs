@@ -12,17 +12,14 @@ mod test {
         let src = r#"
         package test;
 
-        fn min(a: T, b: T) -> T = if (a > b) b else a;
+        fn <T : Number> min(a: T, b: T) -> T = if (a > b) b else a;
 
-        fn <T : Comparable> max(a: T, b: T) -> T {
-            if (a > b) {
-                return a;
-            } else {
-                return b;
-            }
+        fn <T : Number> max(a: T, b: T) -> T {
+            if (a > b) return a;
+            else return b;
         }
 
-        fn <T : Comparable> isEqual(a: T, b: T) -> Boolean {
+        fn <T : Number> isEqual(a: T, b: T) -> Boolean {
             return !(a > b || a < b);
         }
         "#;
