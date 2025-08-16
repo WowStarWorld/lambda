@@ -101,6 +101,8 @@ impl Parser {
     }
 
     pub fn is_call_expression(&self) -> bool {
-        self.token_buffer.is_punctuation_of('(') || self.token_buffer.is_punctuation_of('<')
+        self.token_buffer.is_punctuation_of('(') ||
+            (self.token_buffer.is_punctuation_of('<') &&
+                self.sub_parser(0).parse_type_arguments().is_ok())
     }
 }

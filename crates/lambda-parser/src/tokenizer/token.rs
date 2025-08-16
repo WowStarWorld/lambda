@@ -17,7 +17,7 @@ pub enum NumberRadix {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum TokenKind {
-    Identifier(String),
+    Identifier { raw: String, value: String },
     NumberLiteral { raw: String, radix: NumberRadix },
     StringLiteral { value: String, raw: String },
     TemplateString { raw: String, text: String },
@@ -37,7 +37,7 @@ pub struct Token {
 impl Token {
     pub fn get_raw(&self) -> String {
         match &self.kind {
-            TokenKind::Identifier(s) => s.clone(),
+            TokenKind::Identifier { raw, .. } => raw.clone(),
             TokenKind::NumberLiteral { raw, .. } => raw.clone(),
             TokenKind::StringLiteral { raw, .. } => raw.clone(),
             TokenKind::TemplateString { raw, .. } => raw.clone(),
@@ -61,10 +61,10 @@ impl Token {
     }
 
     pub fn is_identifier(&self) -> bool {
-        matches!(self.kind, TokenKind::Identifier(_))
+        matches!(self.kind, TokenKind::Identifier { .. })
     }
 
     pub fn is_identifier_of(&self, identifier: &str) -> bool {
-        matches!(&self.kind, TokenKind::Identifier(value) if value == identifier)
+        matches!(&self.kind, TokenKind::Identifier { raw: value, .. } if value == identifier)
     }
 }

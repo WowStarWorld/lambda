@@ -111,7 +111,7 @@ impl Tokenizer {
         } else if self.is_punctuation() {
             Ok(self.get_punctuation())
         } else if self.is_identifier_start() {
-            Ok(self.get_identifier())
+            self.get_identifier()
         } else {
             let start = self.current_index;
             let next = self.get().unwrap();
@@ -153,19 +153,35 @@ impl Tokenizer {
         }
     }
 
-    fn get_identifier(&mut self) -> Token {
-        let start = self.current_index;
-        let mut identifier = String::new();
-
-        identifier.push(self.get().unwrap());
-        while self.is_identifier_part() {
+    fn get_identifier(&mut self) -> Result<Token, String> {
+        if self.peek().map_or(false, |t| t == '`') {
+            let result = self.get_string()?;
+            if let TokenKind::StringLiteral { value, raw, .. } = result.kind {
+                Ok(Token {
+                    kind: TokenKind::Identifier {
+                        raw, value,
+                    },
+                    start: result.start,
+                    end: result.end,
+                })
+            } else {
+                Err("Invalid identifier with backticks".to_string())
+            }
+        } else {
+            let start = self.current_index;
+            let mut identifier = String::new();
             identifier.push(self.get().unwrap());
-        }
-
-        Token {
-            kind: TokenKind::Identifier(identifier),
-            start,
-            end: self.current_index,
+            while self.is_identifier_part() {
+                identifier.push(self.get().unwrap());
+            }
+            Ok(Token {
+                kind: TokenKind::Identifier {
+                    raw: identifier.to_string(),
+                    value: identifier.to_string(),
+                },
+                start,
+                end: self.current_index,
+            })
         }
     }
 
@@ -445,7 +461,7 @@ impl Tokenizer {
     }
 
     fn is_identifier_start(&self) -> bool {
-        self.peek().map_or(false, |c| c.is_alphabetic() || c == '_')
+        self.peek().map_or(false, |c| c.is_alphabetic() || c == '_' || c == '`')
     }
 
     fn is_identifier_part(&self) -> bool {

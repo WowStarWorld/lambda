@@ -10,17 +10,18 @@ pub struct TokenBuffer {
 }
 
 pub struct Parser {
-    pub token_buffer: TokenBuffer,
+    pub token_buffer: TokenBuffer
 }
 
 impl Parser {
-    pub fn new(tokenizer: Tokenizer) -> Self {
-        Self {
-            token_buffer: TokenBuffer::new(tokenizer),
-        }
-    }
+    pub fn new(tokenizer: Tokenizer) -> Self { Self { token_buffer: TokenBuffer::new(tokenizer), } }
+    pub fn from_token_buffer(token_buffer: TokenBuffer) -> Self { Self { token_buffer } }
     pub fn err(&self, message: &str, cause: Option<Box<dyn std::error::Error>>) -> SyntaxError {
         self.token_buffer.err(message, cause)
+    }
+    
+    pub fn sub_parser(&self, offset: usize) -> Self {
+        Self { token_buffer: self.token_buffer.sub_token_buffer(offset) }
     }
 }
 
@@ -30,6 +31,23 @@ impl TokenBuffer {
             tokens: tokenizer.collect().unwrap(),
             src_info: tokenizer.src_info,
             position: 0,
+        }
+    }
+    
+    pub fn sub_token_buffer(&self, offset: usize) -> Self {
+        let start = self.position + offset;
+        let end = self.tokens.len();
+        if start >= end {
+            return Self {
+                tokens: Vec::new(),
+                position: 0,
+                src_info: self.src_info.clone(),
+            };
+        }
+        Self {
+            tokens: self.tokens[start..end].to_vec(),
+            position: 0,
+            src_info: self.src_info.clone(),
         }
     }
 

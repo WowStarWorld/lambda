@@ -1,11 +1,11 @@
-use crate::node::declaration::{Declaration, FunctionParameter};
+use crate::node::declaration::{AccessModifier, Declaration, FunctionParameter};
 use crate::node::expression::Identifier;
-use crate::node::statement::Statement;
+use crate::node::statement::{ReturnStatement, Statement};
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
 impl Parser {
     pub fn is_function_declaration(&self) -> bool {
-        self.token_buffer.is_identifier_of("func")
+        self.token_buffer.is_identifier_of("fn")
     }
 
     pub fn parse_function_parameter(&mut self) -> ParseResult<FunctionParameter> {
@@ -76,7 +76,7 @@ impl Parser {
         Ok(parameters)
     }
 
-    pub fn parse_function_declaration(&mut self) -> BoxParseResult<dyn Declaration> {
+    pub fn parse_function_declaration(&mut self, access_modifier: Option<AccessModifier>) -> BoxParseResult<dyn Declaration> {
         self.token_buffer.next(); // 跳过 'fun'
         self.token_buffer.skip_whitespaces();
         let type_parameters = self.parse_type_parameters()?;
@@ -110,29 +110,40 @@ impl Parser {
             None
         };
         self.token_buffer.skip_whitespaces();
-        if !self.token_buffer.is_punctuation_of('{') {
-            return Err(self.err("Expected '{' to start function body", None).into());
+        if !self.is_function_body() {
+            return Err(self.err("Expected '{' or '=' to start function body", None).into());
         }
-        self.token_buffer.next(); // 跳过 '{'
-        self.token_buffer.skip_whitespaces();
-        let mut body: Vec<Box<dyn Statement>> = Vec::new();
-        while !self.token_buffer.is_punctuation_of('}') {
-            if !self.is_statement() {
-                return Err(self
-                    .err("Expected a statement in function body", None)
-                    .into());
-            }
-            let statement = self.parse_statement()?;
-            body.push(statement);
-            self.token_buffer.skip_whitespaces();
-        }
-        self.token_buffer.next(); // 跳过 '}'
+        let body = self.parse_function_body()?;
         Ok(Box::new(crate::node::declaration::FunctionDeclaration {
+            access_modifier,
             name,
             type_parameters,
             parameters,
             body,
             return_type,
         }))
+    }
+
+    fn is_function_body(&self) -> bool {
+        self.token_buffer.is_punctuation_of('{') || self.token_buffer.is_punctuation_of('=')
+    }
+
+    fn parse_function_body(&mut self) -> ParseResult<Box<dyn Statement>> {
+        if self.token_buffer.is_punctuation_of('{') {
+            self.parse_block_statement()
+        } else if self.token_buffer.is_punctuation_of('=') {
+            self.token_buffer.next();
+            self.token_buffer.skip_whitespaces();
+            let expression = self.parse_expression()?;
+            self.token_buffer.skip_whitespaces();
+            if !self.token_buffer.is_punctuation_of(';') {
+                Err(self.err("Expected ';' at the end of expression body", None).into())
+            } else {
+                self.token_buffer.next(); // 跳过 ';'
+                Ok(Box::new(ReturnStatement::new(Some(expression))))
+            }
+        } else {
+            Err(self.err("Expected '{' or '=' to start function body", None).into())
+        }
     }
 }

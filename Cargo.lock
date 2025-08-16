@@ -19,13 +19,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lambda-repl"
-version = "1.0.0"
-dependencies = [
- "lambda-parser",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,9 +1,10 @@
 use crate::node::node::HasToken;
 use crate::node::typing::Type;
-use crate::tokenizer::token::Token;
+use crate::tokenizer::token::{Token, TokenKind};
 use lambda_core::impl_downcast;
 use std::any::Any;
 use std::fmt::Debug;
+use crate::node::statement::Statement;
 
 pub trait Expression: Debug + Any {}
 impl_downcast!(Expression);
@@ -26,8 +27,11 @@ pub struct Identifier {
     pub token: Token,
 }
 impl Identifier {
-    pub fn to_expression(&self) -> &dyn Expression {
-        self
+    pub fn get_name(&self) -> String {
+        let TokenKind::Identifier { value, .. } = &self.token.kind else {
+            panic!("Expected Identifier token kind");
+        };
+        value.clone()
     }
 }
 impl Expression for Identifier {}
@@ -75,3 +79,18 @@ pub struct UnaryExpression {
     pub operator: String,
 }
 impl Expression for UnaryExpression {}
+
+#[derive(Debug)]
+pub struct IfExpression {
+    pub test: Box<dyn Expression>,
+    pub consequent: Box<dyn Expression>,
+    pub alternate: Option<Box<dyn Expression>>,
+}
+impl Expression for IfExpression {}
+
+#[derive(Debug)]
+pub struct BlockExpression {
+    pub statements: Vec<Box<dyn Statement>>,
+    pub return_expression: Option<Box<dyn Expression>>,
+}
+impl Expression for BlockExpression {}

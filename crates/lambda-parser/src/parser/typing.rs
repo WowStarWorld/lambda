@@ -70,17 +70,23 @@ impl Parser {
         Ok(type_arguments)
     }
 
-    pub fn parse_named_type(&mut self) -> BoxParseResult<dyn Type> {
-        let mut name = self.token_buffer.next().unwrap().get_raw().to_string();
+    pub fn parse_identifier_list(&mut self) -> ParseResult<String> {
+        let mut name = self.parse_identifier()?.downcast::<Identifier>().unwrap().get_name();
         while self.token_buffer.is_punctuation_of('.') {
-            self.token_buffer.next(); // 条股哦 '.'
+            self.token_buffer.next(); // 跳过 '.'
             name.push('.');
             if !self.token_buffer.is_identifier() {
                 return Err(self.err("Expected an identifier after '.'", None).into());
             }
-            let next = self.token_buffer.next().unwrap(); // Identifier
-            name.push_str(&next.get_raw());
+            let next = self.parse_identifier()?.downcast::<Identifier>().unwrap().get_name(); // Identifier
+            name.push_str(&next);
         }
+        self.token_buffer.skip_whitespaces();
+        Ok(name)
+    }
+    
+    pub fn parse_named_type(&mut self) -> BoxParseResult<dyn Type> {
+        let name = self.parse_identifier_list()?;
         self.token_buffer.skip_whitespaces();
         let type_arguments = self.parse_type_arguments()?;
         Ok(Box::new(NamedType {

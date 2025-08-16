@@ -8,4 +8,4 @@ members = [
     "crates/lambda-bytecode",
     "crates/lambda-core",
     "crates/lambda-parser"
-, "crates/lambda-repl"]
+]
