@@ -31,6 +31,10 @@ pub fn parse_function_arguments(token_buffer: &mut TokenBuffer) -> Result<Vec<Fu
     if token_buffer.is_punctuation_of('(') {
         token_buffer.next(); // 跳过 '('
         token_buffer.skip_whitespaces();
+        if token_buffer.is_punctuation_of(')') {
+            token_buffer.next(); // 跳过 ')'
+            return Ok(arguments); // 没有参数
+        }
         while token_buffer.has_next() {
             token_buffer.skip_whitespaces();
             let is_rest = token_buffer.is_punctuation_of('.');

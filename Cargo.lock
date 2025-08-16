@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "lambda-bytecode"
+version = "1.0.0"
+
+[[package]]
 name = "lambda-core"
 version = "1.0.0"
 
@@ -12,6 +16,13 @@ version = "1.0.0"
 dependencies = [
  "lambda-core",
  "once_cell",
+]
+
+[[package]]
+name = "lambda-repl"
+version = "1.0.0"
+dependencies = [
+ "lambda-parser",
 ]
 
 [[package]]

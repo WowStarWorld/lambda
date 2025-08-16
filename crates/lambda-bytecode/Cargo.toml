@@ -1,0 +1,6 @@
+[package]
+name = "lambda-bytecode"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

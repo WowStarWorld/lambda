@@ -1,0 +1,7 @@
+[package]
+name = "lambda-repl"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+lambda-parser = { path = "../lambda-parser" }
