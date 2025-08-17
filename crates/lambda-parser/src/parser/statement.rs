@@ -36,12 +36,15 @@ impl Parser {
                 .into());
         }
         self.token_buffer.skip_whitespaces();
-        if !self.token_buffer.is_punctuation_of(';') {
+        if !self.token_buffer.is_line_break() {
             Err(self
-                .err("Expected ';' at the end of expression statement", None)
+                .err(
+                    "Expected line-break at the end of expression statement",
+                    None,
+                )
                 .into())
         } else {
-            self.token_buffer.next(); // 跳过 ';'
+            self.token_buffer.skip_line_break();
             Ok(Box::new(ExpressionStatement::new(expression?)))
         }
     }
@@ -61,12 +64,12 @@ impl Parser {
             None
         };
         self.token_buffer.skip_whitespaces();
-        if !self.token_buffer.is_punctuation_of(';') {
+        if !self.token_buffer.is_line_break() {
             return Err(self
-                .err("Expected ';' at the end of return statement", None)
+                .err("Expected line-break at the end of return statement", None)
                 .into());
         }
-        self.token_buffer.next(); // 跳过 ';'
+        self.token_buffer.skip_line_break();
         Ok(Box::new(ReturnStatement::new(expression)))
     }
 

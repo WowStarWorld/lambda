@@ -37,12 +37,12 @@ impl Parser {
         self.token_buffer.skip_whitespaces();
         let name = self.parse_identifier_list()?;
         self.token_buffer.skip_whitespaces();
-        if !self.token_buffer.is_punctuation_of(';') {
+        if !self.token_buffer.is_line_break() {
             return Err(self
-                .err("Expected ';' after package definition", None)
+                .err("Expected line-break after package definition", None)
                 .into());
         }
-        self.token_buffer.next(); // 跳过 ';'
+        self.token_buffer.skip_line_break(); // 跳过 ';'
         Ok(PackageDefinition { name })
     }
 

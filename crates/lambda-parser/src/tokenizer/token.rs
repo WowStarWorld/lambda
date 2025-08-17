@@ -5,11 +5,7 @@ pub const PUNCTUATIONS: &[char] = &[
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NumberRadix {
-    Decimal {
-        integer: Option<String>,
-        fraction: Option<String>,
-        exponent: Option<String>,
-    },
+    Decimal { integer: Option<String>, fraction: Option<String>, exponent: Option<String>, },
     Octal,
     Binary,
     Hexadecimal,
@@ -20,7 +16,6 @@ pub enum TokenKind {
     Identifier { raw: String, value: String },
     NumberLiteral { raw: String, radix: NumberRadix },
     StringLiteral { value: String, raw: String },
-    TemplateString { raw: String, text: String },
     Punctuation(char),
     Whitespace(String),
     Unknown(char),
@@ -40,7 +35,6 @@ impl Token {
             TokenKind::Identifier { raw, .. } => raw.clone(),
             TokenKind::NumberLiteral { raw, .. } => raw.clone(),
             TokenKind::StringLiteral { raw, .. } => raw.clone(),
-            TokenKind::TemplateString { raw, .. } => raw.clone(),
             TokenKind::Punctuation(c) => c.to_string(),
             TokenKind::Whitespace(s) => s.to_string(),
             TokenKind::Unknown(c) => c.to_string(),

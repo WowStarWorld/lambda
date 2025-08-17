@@ -80,6 +80,22 @@ impl TokenBuffer {
         self.tokens.get(self.position)
     }
 
+    pub fn last(&self) -> Option<&Token> {
+        if self.position > 0 {
+            self.tokens.get(self.position - 1)
+        } else {
+            None
+        }
+    }
+
+    pub fn last_n(&self, n: usize) -> Option<&Token> {
+        if self.position >= n {
+            self.tokens.get(self.position - n)
+        } else {
+            None
+        }
+    }
+
     pub fn next(&mut self) -> Option<Token> {
         let token = self.tokens.get(self.position);
         if token.is_some() {
@@ -174,15 +190,49 @@ impl TokenBuffer {
     pub fn is_identifier(&self) -> bool {
         self.peek().map_or(false, |token| token.is_identifier())
     }
+
     pub fn is_identifier_of(&self, identifier: &str) -> bool {
         self.peek()
             .map_or(false, |token| token.is_identifier_of(identifier))
     }
+
     pub fn is_punctuation(&self) -> bool {
         self.peek().map_or(false, |token| token.is_punctuation())
     }
+
     pub fn is_punctuation_of(&self, punctuation: char) -> bool {
         self.peek()
             .map_or(false, |token| token.is_punctuation_of(punctuation))
+    }
+
+    pub fn is_whitespace(&self) -> bool {
+        self.peek().map_or(false, |token| token.is_whitespace())
+    }
+
+    pub fn is_line_break(&self) -> bool {
+        let next = self.peek();
+        match next {
+            Some(Token { kind: TokenKind::Punctuation(';'), .. }) => return true,
+            Some(Token { kind: TokenKind::Whitespace(s), .. }) if s.chars().any(|c| c == '\n' || c == '\r') => return true,
+            _ => {},
+        };
+        let last = self.last();
+        match last {
+            Some(Token { kind: TokenKind::Whitespace(s), .. }) if s.chars().any(|c| c == '\n' || c == '\r') => true,
+            _ => false
+        }
+    }
+
+    pub fn skip_line_break(&mut self) {
+        let next = self.peek();
+        match next {
+            Some(Token { kind: TokenKind::Punctuation(';'), .. }) => {
+                self.next();
+            },
+            Some(Token { kind: TokenKind::Whitespace(s), .. }) if s.chars().any(|c| c == '\n' || c == '\r') => {
+                self.next();
+            },
+            _ => {},
+        };
     }
 }

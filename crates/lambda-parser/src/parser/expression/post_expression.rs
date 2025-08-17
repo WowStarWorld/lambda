@@ -1,4 +1,4 @@
-use crate::node::expression::{CallExpression, Expression, FunctionArgument};
+use crate::node::expression::{CallExpression, Expression, FunctionArgument, Identifier};
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
 impl Parser {
@@ -39,25 +39,33 @@ impl Parser {
             }
             while self.token_buffer.has_next() {
                 self.token_buffer.skip_whitespaces();
-                let is_rest = self.token_buffer.is_punctuation_of('.');
-                if is_rest {
-                    self.token_buffer.next(); // 跳过 '.'
-                    if self.token_buffer.is_punctuation_of('.') {
-                        self.token_buffer.next(); // 跳过 '.'
-                        if !self.token_buffer.is_punctuation_of('.') {
-                            return Err(self.err("Expected '...' for rest parameter", None).into());
-                        }
-                        self.token_buffer.next(); // 跳过 '.'
-                        arguments.push(FunctionArgument {
-                            base: self.parse_expression()?,
-                            is_rest: true,
-                        });
-                    } else {
-                        return Err(self.err("Expected '...' for rest parameter", None).into());
-                    }
-                } else {
+                let is_rest = self.token_buffer.is_punctuation_of('*');
+                if is_rest { 
+                    self.token_buffer.next(); // 跳过 '*'
                     arguments.push(FunctionArgument {
-                        base: self.parse_expression()?,
+                        value: self.parse_expression()?,
+                        is_rest: true,
+                        name: None,
+                    });
+                } else {
+                    let name = if self.token_buffer.is_identifier() {
+                        let start = self.token_buffer.position;
+                        let identifier = self.token_buffer.next().unwrap();
+                        self.token_buffer.skip_whitespaces();
+                        if self.token_buffer.is_punctuation_of('=') {
+                            self.token_buffer.next();
+                            self.token_buffer.skip_whitespaces();
+                            Some(Identifier { token: identifier })
+                        } else {
+                            self.token_buffer.position = start;
+                            None
+                        }
+                    } else {
+                        None
+                    };
+                    arguments.push(FunctionArgument {
+                        name,
+                        value: self.parse_expression()?,
                         is_rest: false,
                     });
                 }

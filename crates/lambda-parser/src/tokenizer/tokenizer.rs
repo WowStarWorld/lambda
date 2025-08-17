@@ -99,7 +99,7 @@ impl Tokenizer {
         } else if self.is_whitespace() {
             Ok(self.get_whitespace())
         } else if self.is_string_start() {
-            self.get_string()
+            self.get_string(true)
         } else if self.is_octal_number() {
             self.get_octal_number()
         } else if self.is_hexadecimal_number() {
@@ -155,7 +155,7 @@ impl Tokenizer {
 
     fn get_identifier(&mut self) -> Result<Token, String> {
         if self.peek().map_or(false, |t| t == '`') {
-            let result = self.get_string()?;
+            let result = self.get_string(false)?;
             if let TokenKind::StringLiteral { value, raw, .. } = result.kind {
                 Ok(Token {
                     kind: TokenKind::Identifier { raw, value },
@@ -371,7 +371,7 @@ impl Tokenizer {
         })
     }
 
-    fn get_string(&mut self) -> Result<Token, String> {
+    fn get_string(&mut self, new_line: bool) -> Result<Token, String> {
         let start = self.current_index;
         let quote = self.get().unwrap(); // 跳过引号
         let mut content = String::new();
@@ -444,7 +444,7 @@ impl Tokenizer {
                     }
                     _ => return Err(format!("Invalid escape: \\{}", esc)),
                 }
-            } else if c == '\n' || c == '\r' {
+            } else if (c == '\n' || c == '\r') && !new_line {
                 return Err("String literal cannot contain line breaks".to_string());
             } else {
                 content.push(self.get().unwrap());

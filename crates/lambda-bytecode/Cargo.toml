@@ -4,3 +4,5 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+lambda-parser = { path = "../lambda-parser" }
+bigdecimal = "0.4.8"

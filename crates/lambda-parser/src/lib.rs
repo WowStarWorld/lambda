@@ -10,17 +10,17 @@ mod test {
     #[test]
     fn it_works() {
         let src = r#"
-        package test;
+        package test
 
-        fn <T : Number> min(a: T, b: T) -> T = if (a > b) b else a;
+        fn <T : Number> min(a: T, b: T) -> T = if (a > b) b else a
 
-        fn <T : Number> max(a: T, b: T) -> T {
-            if (a > b) return a;
-            else return b;
+        fn <T : Number> max(a: T, b: T) -> T = {
+            if (a > b) a
+            else b
         }
 
         fn <T : Number> isEqual(a: T, b: T) -> Boolean {
-            return !(a > b || a < b);
+            return !(a > b || a < b)
         }
         "#;
         let src_info = SrcInfo {

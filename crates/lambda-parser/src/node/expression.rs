@@ -62,7 +62,8 @@ impl BinaryExpression {
 // CallExpression
 #[derive(Debug)]
 pub struct FunctionArgument {
-    pub base: Box<dyn Expression>,
+    pub name: Option<Identifier>,
+    pub value: Box<dyn Expression>,
     pub is_rest: bool,
 }
 
