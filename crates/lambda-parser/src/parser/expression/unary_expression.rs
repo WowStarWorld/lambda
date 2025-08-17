@@ -1,4 +1,5 @@
 use crate::node::expression::{Expression, UnaryExpression};
+use crate::node::node::TokenRange;
 use crate::parser::api::{BoxParseResult, Parser};
 
 impl Parser {
@@ -20,12 +21,14 @@ impl Parser {
             || self.token_buffer.is_punctuation_of('!')
     }
     pub fn parse_unary_sign_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        let start = self.token_buffer.position;
         let operator = self.token_buffer.next().unwrap();
         let expression = self.parse_base_expression();
         match expression {
             Ok(expr) => Ok(Box::new(UnaryExpression {
                 expression: expr,
                 operator: operator.get_raw(),
+                position: TokenRange::new(start, self.token_buffer.position),
             })),
             Err(err) => Err(err),
         }

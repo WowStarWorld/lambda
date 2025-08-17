@@ -1,4 +1,5 @@
 use crate::node::expression::{CallExpression, Expression, FunctionArgument, Identifier};
+use crate::node::node::TokenRange;
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
 impl Parser {
@@ -51,11 +52,12 @@ impl Parser {
                     let name = if self.token_buffer.is_identifier() {
                         let start = self.token_buffer.position;
                         let identifier = self.token_buffer.next().unwrap();
+                        let identifier_end = self.token_buffer.position;
                         self.token_buffer.skip_whitespaces();
                         if self.token_buffer.is_punctuation_of('=') {
                             self.token_buffer.next();
                             self.token_buffer.skip_whitespaces();
-                            Some(Identifier { token: identifier })
+                            Some(Identifier { token: identifier, position: TokenRange::new(start, identifier_end)})
                         } else {
                             self.token_buffer.position = start;
                             None
@@ -95,6 +97,7 @@ impl Parser {
         &mut self,
         callee: Box<dyn Expression>,
     ) -> BoxParseResult<dyn Expression> {
+        let start = callee.get_position().start;
         let type_arguments = self.parse_type_arguments()?;
         self.token_buffer.skip_whitespaces();
         if !self.token_buffer.is_punctuation_of('(') {
@@ -105,6 +108,7 @@ impl Parser {
             callee,
             arguments,
             type_arguments,
+            position: TokenRange::new(start, self.token_buffer.position)
         }))
     }
 

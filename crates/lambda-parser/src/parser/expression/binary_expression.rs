@@ -2,6 +2,7 @@ use crate::node::expression::Expression;
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 use crate::tokenizer::token::{Token, TokenKind};
 use once_cell::sync::Lazy;
+use crate::node::node::TokenRange;
 
 pub const BINARY_OPERATORS: &[&[&str]] = &[
     &["**"],
@@ -56,8 +57,10 @@ fn build_binary_operator(
         let mut iter = group.into_iter();
         while let Some((op, right)) = iter.next() {
             // 构造Token
+            let left_start = left.get_position().start;
+            let right_end = right.get_position().end;
             left = Box::new(crate::node::expression::BinaryExpression::new(
-                left, right, op,
+                left, right, op, TokenRange::new(left_start, right_end)
             ));
         }
     }

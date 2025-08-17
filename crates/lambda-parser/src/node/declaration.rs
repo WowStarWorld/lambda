@@ -4,8 +4,9 @@ use crate::node::typing::{Type, TypeParameter};
 use lambda_core::impl_downcast;
 use std::any::Any;
 use std::fmt::Debug;
+use crate::node::node::{Node, TokenRange};
 
-pub trait Declaration: Debug + Any {}
+pub trait Declaration: Debug + Any + Node {}
 impl_downcast!(Declaration);
 
 #[derive(Debug, Eq, PartialEq)]
@@ -23,12 +24,12 @@ pub enum OverridableModifier {
 }
 
 // FunctionDeclaration
-
 #[derive(Debug, Eq, PartialEq)]
 pub enum FunctionModifier {
     Native,
     Abstract,
 }
+
 #[derive(Debug)]
 pub struct FunctionParameter {
     pub name: Identifier,
@@ -45,6 +46,10 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<FunctionParameter>,
     pub body: Box<dyn Statement>,
     pub return_type: Option<Box<dyn Type>>,
+    pub position: TokenRange
+}
+impl Node for FunctionDeclaration {
+    fn get_position(&self) -> TokenRange { self.position }
 }
 impl Declaration for FunctionDeclaration {}
 
@@ -56,4 +61,9 @@ pub struct NoBodyFunctionDeclaration {
     pub type_parameters: Vec<TypeParameter>,
     pub parameters: Vec<FunctionParameter>,
     pub return_type: Option<Box<dyn Type>>,
+    pub position: TokenRange
 }
+impl Node for NoBodyFunctionDeclaration {
+    fn get_position(&self) -> TokenRange { self.position }
+}
+impl Declaration for NoBodyFunctionDeclaration {}

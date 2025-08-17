@@ -1,4 +1,5 @@
 use crate::node::expression::{BlockExpression, Expression, Identifier, IfExpression, Literal};
+use crate::node::node::TokenRange;
 use crate::node::statement::Statement;
 use crate::parser::api::{BoxParseResult, Parser};
 use crate::tokenizer::token::TokenKind;
@@ -51,6 +52,7 @@ impl Parser {
         self.is_block_statement()
     }
     pub fn parse_block_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        let expression_start = self.token_buffer.position;
         self.token_buffer.next(); // 跳过 '{'
         self.token_buffer.skip_whitespaces();
         let mut body: Vec<Box<dyn Statement>> = Vec::new();
@@ -77,9 +79,11 @@ impl Parser {
             self.token_buffer.skip_whitespaces();
         }
         self.token_buffer.next(); // 跳过 '}'
+        let end = self.token_buffer.position;
         Ok(Box::new(BlockExpression {
             statements: body,
             return_expression,
+            position: TokenRange::new(expression_start, end),
         }))
     }
 
@@ -88,8 +92,10 @@ impl Parser {
     }
     pub fn parse_identifier(&mut self) -> BoxParseResult<dyn Expression> {
         if self.is_identifier() {
+            let start = self.token_buffer.position;
             let token = self.token_buffer.next().unwrap();
-            Ok(Box::new(Identifier { token }))
+            let end = self.token_buffer.position;
+            Ok(Box::new(Identifier { token, position: TokenRange::new(start, end) }))
         } else {
             Err(self.err("Expected an identifier", None).into())
         }
@@ -124,8 +130,11 @@ impl Parser {
     }
 
     pub fn parse_literal(&mut self) -> Box<Literal> {
+        let start = self.token_buffer.position;
+        let token = self.token_buffer.next().unwrap();
+        let end = self.token_buffer.position;
         Box::new(Literal {
-            token: self.token_buffer.next().unwrap(),
+            token, position: TokenRange::new(start, end)
         })
     }
 
@@ -133,6 +142,7 @@ impl Parser {
         self.token_buffer.is_identifier_of("if")
     }
     pub fn parse_if_expression(&mut self) -> BoxParseResult<dyn Expression> {
+        let start = self.token_buffer.position;
         self.token_buffer.next();
         self.token_buffer.skip_whitespaces();
         if !self.token_buffer.is_punctuation_of('(') {
@@ -164,10 +174,12 @@ impl Parser {
         } else {
             None
         };
+        let end = self.token_buffer.position;
         Ok(Box::new(IfExpression {
             test,
             consequent,
             alternate,
+            position: TokenRange::new(start, end)
         }))
     }
 }

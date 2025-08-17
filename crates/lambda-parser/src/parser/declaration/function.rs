@@ -1,5 +1,6 @@
 use crate::node::declaration::{AccessModifier, Declaration, FunctionParameter};
 use crate::node::expression::Identifier;
+use crate::node::node::TokenRange;
 use crate::node::statement::{ReturnStatement, Statement};
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
@@ -76,7 +77,8 @@ impl Parser {
         &mut self,
         access_modifier: Option<AccessModifier>,
     ) -> BoxParseResult<dyn Declaration> {
-        self.token_buffer.next(); // 跳过 'fun'
+        let start = self.token_buffer.position;
+        self.token_buffer.next(); // 跳过 'fn'
         self.token_buffer.skip_whitespaces();
         let type_parameters = self.parse_type_parameters()?;
         self.token_buffer.skip_whitespaces();
@@ -115,6 +117,7 @@ impl Parser {
                 .into());
         }
         let body = self.parse_function_body()?;
+        let end = self.token_buffer.position;
         Ok(Box::new(crate::node::declaration::FunctionDeclaration {
             access_modifier,
             name,
@@ -122,6 +125,7 @@ impl Parser {
             parameters,
             body,
             return_type,
+            position: TokenRange::new(start, end),
         }))
     }
 
@@ -143,7 +147,8 @@ impl Parser {
                     .into())
             } else {
                 self.token_buffer.skip_line_break();
-                Ok(Box::new(ReturnStatement::new(Some(expression))))
+                let position = expression.get_position();
+                Ok(Box::new(ReturnStatement { expression: Some(expression), position }))
             }
         } else {
             Err(self

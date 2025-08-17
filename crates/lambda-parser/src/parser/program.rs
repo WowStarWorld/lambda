@@ -1,4 +1,5 @@
 use crate::node::declaration::{Declaration, FunctionDeclaration};
+use crate::node::node::TokenRange;
 use crate::node::program::{PackageDefinition, Program};
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
@@ -47,6 +48,7 @@ impl Parser {
     }
 
     pub fn parse_program(&mut self) -> ParseResult<Program> {
+        let start = self.token_buffer.position;
         let package_definition = self.parse_package_definition()?;
         let mut declarations = Vec::new();
         self.token_buffer.skip_whitespaces();
@@ -61,6 +63,7 @@ impl Parser {
         Ok(Program {
             package_definition,
             declarations,
+            position: TokenRange::new(start, self.token_buffer.position),
         })
     }
 }

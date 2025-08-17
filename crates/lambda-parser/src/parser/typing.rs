@@ -1,4 +1,5 @@
 use crate::node::expression::Identifier;
+use crate::node::node::TokenRange;
 use crate::node::typing::{NamedType, NullableType, Type, TypeParameter};
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
@@ -14,13 +15,14 @@ impl Parser {
             self.parse_bracket_type()
         } else {
             Err(self.err("Expected a named type", None).into())
-        };
+        }?;
         self.token_buffer.skip_whitespaces();
-        if result.is_ok() && self.token_buffer.is_punctuation_of('?') {
+        if self.token_buffer.is_punctuation_of('?') {
+            let start = result.get_position().start;
             self.token_buffer.next(); // 跳过 '?'
-            Ok(Box::new(NullableType { base: result? }))
+            Ok(Box::new(NullableType { base: result, position: TokenRange::new(start, self.token_buffer.position) }))
         } else {
-            result
+            Ok(result)
         }
     }
 
@@ -94,12 +96,14 @@ impl Parser {
     }
 
     pub fn parse_named_type(&mut self) -> BoxParseResult<dyn Type> {
+        let start = self.token_buffer.position;
         let name = self.parse_identifier_list()?;
         self.token_buffer.skip_whitespaces();
         let type_arguments = self.parse_type_arguments()?;
         Ok(Box::new(NamedType {
             name,
             type_arguments,
+            position: TokenRange::new(start, self.token_buffer.position),
         }))
     }
 
