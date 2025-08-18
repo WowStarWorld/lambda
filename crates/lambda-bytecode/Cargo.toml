@@ -5,5 +5,4 @@ edition.workspace = true
 
 [dependencies]
 lambda-parser = { path = "../lambda-parser" }
-lambda-core = { path = "../lambda-core" }
 bigdecimal.workspace = true
