@@ -1,3 +1,6 @@
+use std::any::Any;
+use std::fmt::Debug;
+use lambda_core::impl_downcast;
 use crate::tokenizer::token::Token;
 
 pub trait HasToken {
@@ -14,4 +17,5 @@ impl TokenRange {
     pub fn new(start: usize, end: usize) -> Self { TokenRange { start, end } }
 }
 
-pub trait Node { fn get_position(&self) -> TokenRange; }
+pub trait Node : Debug + Any { fn get_position(&self) -> TokenRange; }
+impl_downcast!(Node);

@@ -122,7 +122,7 @@ impl Parser {
         if let Some(token) = next {
             matches!(
                 token.kind,
-                TokenKind::NumberLiteral { .. } | TokenKind::StringLiteral { .. }
+                TokenKind::NumberLiteral { .. } | TokenKind::StringLiteral { .. } | TokenKind::CharacterLiteral { .. }
             )
         } else {
             false
@@ -133,9 +133,10 @@ impl Parser {
         let start = self.token_buffer.position;
         let token = self.token_buffer.next().unwrap();
         let end = self.token_buffer.position;
-        Box::new(Literal {
+        let result = Box::new(Literal {
             token, position: TokenRange::new(start, end)
-        })
+        });
+        result
     }
 
     pub fn is_if_expression(&self) -> bool {

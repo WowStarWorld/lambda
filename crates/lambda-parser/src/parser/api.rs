@@ -210,6 +210,9 @@ impl TokenBuffer {
     }
 
     pub fn is_line_break(&self) -> bool {
+        if !self.has_next() {
+            return true
+        }
         let next = self.peek();
         match next {
             Some(Token { kind: TokenKind::Punctuation(';'), .. }) => return true,

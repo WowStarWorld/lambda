@@ -1,7 +1,30 @@
 use crate::node::expression::Identifier;
 use crate::node::node::TokenRange;
-use crate::node::typing::{NamedType, NullableType, Type, TypeParameter};
+use crate::node::typing::{NamedType, Type, TypeParameter};
 use crate::parser::api::{BoxParseResult, ParseResult, Parser};
+
+pub type Qualified = (Option<String>, String);
+pub fn is_same_qualified(a: &Qualified, b: &Qualified) -> bool {
+    let a_first = (&a.0).clone();
+    let b_first = (&b.0).clone();
+    let a_second = (&a.1).clone();
+    let b_second = (&b.1).clone();
+    if a_first.is_none() && b_first.is_none() {
+        return a_second == b_second;
+    }
+    if a_first.is_some() && b_first.is_some() {
+        return a_first.unwrap() == b_first.unwrap() && a_second == b_second;
+    }
+    false
+}
+
+pub fn qualified_to_string(qualified: &Qualified) -> String {
+    if let Some(first) = &qualified.0 {
+        format!("{}.{}", first, qualified.1)
+    } else {
+        qualified.1.clone()
+    }
+}
 
 impl Parser {
     pub fn is_type(&self) -> bool {
@@ -9,20 +32,12 @@ impl Parser {
     }
 
     pub fn parse_type(&mut self) -> BoxParseResult<dyn Type> {
-        let result = if self.is_named_type() {
+        if self.is_named_type() {
             self.parse_named_type()
         } else if self.is_bracket_type() {
             self.parse_bracket_type()
         } else {
             Err(self.err("Expected a named type", None).into())
-        }?;
-        self.token_buffer.skip_whitespaces();
-        if self.token_buffer.is_punctuation_of('?') {
-            let start = result.get_position().start;
-            self.token_buffer.next(); // 跳过 '?'
-            Ok(Box::new(NullableType { base: result, position: TokenRange::new(start, self.token_buffer.position) }))
-        } else {
-            Ok(result)
         }
     }
 
@@ -72,15 +87,15 @@ impl Parser {
         Ok(type_arguments)
     }
 
-    pub fn parse_identifier_list(&mut self) -> ParseResult<String> {
-        let mut name = self
+    pub fn parse_identifier_qualified(&mut self) -> ParseResult<Qualified> {
+        let mut start = self
             .parse_identifier()?
             .downcast::<Identifier>()
             .unwrap()
             .get_name();
+        let mut list = Vec::new();
         while self.token_buffer.is_punctuation_of('.') {
             self.token_buffer.next(); // 跳过 '.'
-            name.push('.');
             if !self.token_buffer.is_identifier() {
                 return Err(self.err("Expected an identifier after '.'", None).into());
             }
@@ -89,15 +104,22 @@ impl Parser {
                 .downcast::<Identifier>()
                 .unwrap()
                 .get_name(); // Identifier
-            name.push_str(&next);
+            list.push(next);
         }
-        self.token_buffer.skip_whitespaces();
-        Ok(name)
+        if list.is_empty() {
+            return Ok((None, start));
+        }
+        // 获取并移除最后一项
+        let end = list.pop().unwrap();
+        if !list.is_empty() {
+            start.push('.');
+        }
+        Ok((Some(start + &*(list.join("."))), end))
     }
 
     pub fn parse_named_type(&mut self) -> BoxParseResult<dyn Type> {
         let start = self.token_buffer.position;
-        let name = self.parse_identifier_list()?;
+        let name = self.parse_identifier_qualified()?;
         self.token_buffer.skip_whitespaces();
         let type_arguments = self.parse_type_arguments()?;
         Ok(Box::new(NamedType {

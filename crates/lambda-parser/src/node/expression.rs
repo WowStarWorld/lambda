@@ -1,12 +1,14 @@
 use crate::node::node::{HasToken, Node, TokenRange};
 use crate::node::statement::Statement;
 use crate::node::typing::Type;
-use crate::tokenizer::token::{Token, TokenKind};
+use crate::tokenizer::token::{NumberRadix, Token, TokenKind};
 use lambda_core::impl_downcast;
-use std::any::Any;
 use std::fmt::Debug;
+use std::str::FromStr;
+use bigdecimal::{BigDecimal, Num};
+use bigdecimal::num_bigint::{BigInt, ToBigInt};
 
-pub trait Expression: Debug + Any + Node {}
+pub trait Expression: Node {}
 impl_downcast!(Expression);
 
 // Literal
@@ -14,6 +16,67 @@ impl_downcast!(Expression);
 pub struct Literal {
     pub token: Token,
     pub position: TokenRange
+}
+impl Literal {
+    pub fn is_number(&self) -> bool { matches!(self.token.kind, TokenKind::NumberLiteral { .. }) }
+    pub fn is_integer(&self) -> bool {
+        if !self.is_number() {
+            return false;
+        }
+        let TokenKind::NumberLiteral { radix, .. } = &self.token.kind else {
+            return false;
+        };
+        if let NumberRadix::Decimal { integer, fraction, exponent } = radix {
+            integer.is_some() && fraction.is_none() && exponent.is_none()
+        } else {
+            true
+        }
+    }
+    pub fn is_character(&self) -> bool { matches!(self.token.kind, TokenKind::CharacterLiteral { .. }) }
+    pub fn is_float(&self) -> bool { self.is_number() && !self.is_integer() }
+    pub fn is_string(&self) -> bool { matches!(self.token.kind, TokenKind::StringLiteral { .. }) }
+
+    pub fn get_character(&self) -> char {
+        let TokenKind::CharacterLiteral { value, .. } = &self.token.kind else {
+            panic!("Expected CharacterLiteral token kind"); 
+        };
+        *value
+    }
+    
+    pub fn get_string(&self) -> String {
+        let TokenKind::StringLiteral { value, .. } = &self.token.kind else {
+            panic!("Expected StringLiteral token kind");
+        };
+        value.clone()
+    }
+
+    pub fn get_float(&self) -> BigDecimal {
+        if let TokenKind::NumberLiteral { radix, .. } = &self.token.kind {
+            if let NumberRadix::Decimal { integer, fraction, exponent } = radix {
+                let integer = integer.clone().unwrap_or("0".to_string());
+                let fraction = fraction.clone().unwrap_or("0".to_string());
+                let exponent = exponent.clone().unwrap_or("".to_string());
+                let string = format!("{}.{}{}",  integer, fraction, exponent);
+                BigDecimal::from_str(string.as_str()).ok().unwrap()
+            } else {
+                let raw = self.token.get_raw().chars().skip(2).collect::<String>();
+                let radix: u32 = match radix {
+                    NumberRadix::Binary => 2,
+                    NumberRadix::Octal => 8,
+                    NumberRadix::Hexadecimal => 16,
+                    _ => panic!("Unsupported radix for float conversion")
+                };
+                BigDecimal::from_str_radix(raw.as_str(), radix).ok().unwrap()
+            }
+        } else {
+            panic!("Expected NumberLiteral token kind");
+        }
+    }
+
+    pub fn get_integer(&self) -> BigInt {
+        self.get_float().to_bigint().unwrap()
+    }
+
 }
 impl Node for Literal {
     fn get_position(&self) -> TokenRange { self.position }

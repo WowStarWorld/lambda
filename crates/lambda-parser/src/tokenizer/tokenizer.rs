@@ -100,6 +100,8 @@ impl Tokenizer {
             Ok(self.get_whitespace())
         } else if self.is_string_start() {
             self.get_string(true)
+        } else if self.is_character_start() {
+            self.get_character()
         } else if self.is_octal_number() {
             self.get_octal_number()
         } else if self.is_hexadecimal_number() {
@@ -153,34 +155,38 @@ impl Tokenizer {
         }
     }
 
-    fn get_identifier(&mut self) -> Result<Token, String> {
-        if self.peek().map_or(false, |t| t == '`') {
-            let result = self.get_string(false)?;
-            if let TokenKind::StringLiteral { value, raw, .. } = result.kind {
+    fn get_character(&mut self) -> Result<Token, String> {
+        let result = self.get_string(false)?;
+        if let Token { kind: TokenKind::StringLiteral { value, raw }, .. } = result {
+            if value.len() == 1 {
                 Ok(Token {
-                    kind: TokenKind::Identifier { raw, value },
+                    kind: TokenKind::CharacterLiteral { raw, value: value.chars().next().unwrap() },
                     start: result.start,
                     end: result.end,
                 })
             } else {
-                Err("Invalid identifier with backticks".to_string())
+                Err("Character literal must be exactly one character".to_string())
             }
         } else {
-            let start = self.current_index;
-            let mut identifier = String::new();
-            identifier.push(self.get().unwrap());
-            while self.is_identifier_part() {
-                identifier.push(self.get().unwrap());
-            }
-            Ok(Token {
-                kind: TokenKind::Identifier {
-                    raw: identifier.to_string(),
-                    value: identifier.to_string(),
-                },
-                start,
-                end: self.current_index,
-            })
+            Err("Invalid character literal".to_string())
         }
+    }
+
+    fn get_identifier(&mut self) -> Result<Token, String> {
+        let start = self.current_index;
+        let mut identifier = String::new();
+        identifier.push(self.get().unwrap());
+        while self.is_identifier_part() {
+            identifier.push(self.get().unwrap());
+        }
+        Ok(Token {
+            kind: TokenKind::Identifier {
+                raw: identifier.to_string(),
+                value: identifier.to_string(),
+            },
+            start,
+            end: self.current_index,
+        })
     }
 
     fn is_octal_number(&self) -> bool {
@@ -445,7 +451,7 @@ impl Tokenizer {
                     _ => return Err(format!("Invalid escape: \\{}", esc)),
                 }
             } else if (c == '\n' || c == '\r') && !new_line {
-                return Err("String literal cannot contain line breaks".to_string());
+                return Err("String-like literal should not contain line breaks".to_string());
             } else {
                 content.push(self.get().unwrap());
                 raw.push(c);
@@ -455,12 +461,17 @@ impl Tokenizer {
     }
 
     fn is_string_start(&self) -> bool {
-        self.peek().map_or(false, |c| c == '\'' || c == '"')
+        self.peek().map_or(false, |c| c == '"')
     }
+
+    fn is_character_start(&self) -> bool {
+        self.peek().map_or(false, |c| c == '\'')
+    }
+
 
     fn is_identifier_start(&self) -> bool {
         self.peek()
-            .map_or(false, |c| c.is_alphabetic() || c == '_' || c == '`')
+            .map_or(false, |c| c.is_alphabetic() || c == '_')
     }
 
     fn is_identifier_part(&self) -> bool {

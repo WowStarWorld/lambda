@@ -26,6 +26,7 @@ name = "lambda-bytecode"
 version = "1.0.0"
 dependencies = [
  "bigdecimal",
+ "lambda-core",
  "lambda-parser",
 ]
 
@@ -37,9 +38,21 @@ version = "1.0.0"
 name = "lambda-parser"
 version = "1.0.0"
 dependencies = [
+ "bigdecimal",
  "lambda-core",
  "once_cell",
 ]
+
+[[package]]
+name = "lambda-stdlib"
+version = "1.0.0"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
+name = "lambda-vm"
+version = "1.0.0"
 
 [[package]]
 name = "libm"

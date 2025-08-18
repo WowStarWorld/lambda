@@ -1,7 +1,6 @@
+use crate::node::declaration::VariableDeclaration;
 use crate::node::node::TokenRange;
-use crate::node::statement::{
-    BlockStatement, ExpressionStatement, IfStatement, ReturnStatement, Statement,
-};
+use crate::node::statement::{BlockStatement, DeclarationStatement, ExpressionStatement, IfStatement, ReturnStatement, Statement};
 use crate::parser::api::{BoxParseResult, Parser};
 
 impl Parser {
@@ -9,8 +8,10 @@ impl Parser {
         self.is_return_statement()
             || self.is_block_statement()
             || self.is_if_statement()
+            || self.is_annotated_declaration()
             || self.is_expression_statement()
     }
+
     pub fn parse_statement(&mut self) -> BoxParseResult<dyn Statement> {
         if self.is_return_statement() {
             self.parse_return_statement()
@@ -18,10 +19,28 @@ impl Parser {
             self.parse_block_statement()
         } else if self.is_if_statement() {
             self.parse_if_statement()
+        } else if self.is_annotated_declaration() {
+            self.parse_declaration_statement()
         } else if self.is_expression_statement() {
             self.parse_expression_statement()
         } else {
             Err(self.err("Expected a valid statement", None).into())
+        }
+    }
+
+    pub fn parse_declaration_statement(&mut self) -> BoxParseResult<dyn Statement> {
+        let declaration = self.parse_annotated_declaration()?;
+        if declaration.is::<VariableDeclaration>() {
+            let variable_declaration = declaration.downcast::<VariableDeclaration>().unwrap();
+            if variable_declaration.access_modifier.is_some() {
+                return Err(self.err("Variable declaration statement cannot have access modifier", None).into());
+            }
+            if variable_declaration.member_modifier.is_some() {
+                return Err(self.err("Variable declaration statement cannot have member modifier", None).into());
+            }
+            Ok(Box::new(DeclarationStatement::new(declaration)))
+        } else {
+            Err(self.err("Expected a declaration statement", None).into())
         }
     }
 

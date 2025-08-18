@@ -8,4 +8,8 @@ members = [
     "crates/lambda-bytecode",
     "crates/lambda-core",
     "crates/lambda-parser"
-]
+, "crates/lambda-stdlib", "crates/lambda-vm"]
+
+[workspace.dependencies]
+once_cell = "1.21.3"
+bigdecimal = "0.4.8"

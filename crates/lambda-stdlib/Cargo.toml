@@ -1,9 +1,7 @@
 [package]
-name = "lambda-parser"
+name = "lambda-stdlib"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-lambda-core = { path = "../lambda-core" }
-bigdecimal.workspace = true
 once_cell.workspace = true

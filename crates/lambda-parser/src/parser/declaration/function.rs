@@ -1,4 +1,4 @@
-use crate::node::declaration::{AccessModifier, Declaration, FunctionParameter};
+use crate::node::declaration::{AccessModifier, Declaration, FunctionParameter, MemberModifier};
 use crate::node::expression::Identifier;
 use crate::node::node::TokenRange;
 use crate::node::statement::{ReturnStatement, Statement};
@@ -6,7 +6,13 @@ use crate::parser::api::{BoxParseResult, ParseResult, Parser};
 
 impl Parser {
     pub fn is_function_declaration(&self) -> bool {
-        self.token_buffer.is_identifier_of("fn")
+        self.token_buffer.is_identifier_of("fn") || (
+            self.token_buffer.is_identifier_of("operator") && {
+                let mut buffer = self.token_buffer.sub_token_buffer(1);
+                buffer.skip_whitespaces();
+                buffer.is_identifier_of("fun")
+            }
+        )
     }
 
     pub fn parse_function_parameter(&mut self) -> ParseResult<FunctionParameter> {
@@ -76,8 +82,17 @@ impl Parser {
     pub fn parse_function_declaration(
         &mut self,
         access_modifier: Option<AccessModifier>,
+        member_modifier: Option<MemberModifier>,
+        start: usize,
     ) -> BoxParseResult<dyn Declaration> {
-        let start = self.token_buffer.position;
+        let has_body = member_modifier
+            .iter().clone()
+            .all(|x| *x != MemberModifier::Native && *x != MemberModifier::Abstract);
+        let is_operator = self.token_buffer.is_identifier_of("operator");
+        if is_operator {
+            self.token_buffer.next(); // 跳过 'operator'
+            self.token_buffer.skip_whitespaces();
+        }
         self.token_buffer.next(); // 跳过 'fn'
         self.token_buffer.skip_whitespaces();
         let type_parameters = self.parse_type_parameters()?;
@@ -111,15 +126,32 @@ impl Parser {
             None
         };
         self.token_buffer.skip_whitespaces();
-        if !self.is_function_body() {
-            return Err(self
-                .err("Expected '{' or '=' to start function body", None)
-                .into());
-        }
-        let body = self.parse_function_body()?;
+        let body = if has_body {
+            if !self.is_function_body() {
+                return Err(self
+                    .err("Expected '{' or '=' to start function body", None)
+                    .into());
+            }
+            Some(self.parse_function_body()?)
+        } else {
+            if self.is_function_body() {
+                return Err(self
+                    .err(format!("{:?} function should not have a body", member_modifier.unwrap()).as_str(), None)
+                    .into());
+            }
+            if !self.token_buffer.is_line_break() {
+                return Err(self
+                    .err("Expected line-break after function declaration", None)
+                    .into());
+            }
+            self.token_buffer.skip_line_break();
+            None
+        };
         let end = self.token_buffer.position;
         Ok(Box::new(crate::node::declaration::FunctionDeclaration {
+            is_operator,
             access_modifier,
+            member_modifier,
             name,
             type_parameters,
             parameters,
