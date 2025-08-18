@@ -26,7 +26,6 @@ name = "lambda-bytecode"
 version = "1.0.0"
 dependencies = [
  "bigdecimal",
- "lambda-core",
  "lambda-parser",
 ]
 
